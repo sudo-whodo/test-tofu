@@ -69,8 +69,10 @@ jobs:
           tofu plan \
             -var="bucket_name=${{ secrets.BUCKET_NAME }}" \
             -var="aws_region=${{ env.AWS_REGION }}" \
-            -no-color \
-            -out=tfplan
-        continue-on-error: true
+            -no-color
 
-
+      - name: Display Plan Summary
+        if: always()
+        run: |
+          echo "✅ OpenTofu plan completed successfully!"
+          echo "Review the plan output above to see what resources will be created."
