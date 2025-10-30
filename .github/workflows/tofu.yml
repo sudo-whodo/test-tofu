@@ -65,11 +65,7 @@ jobs:
 
       - name: OpenTofu Plan
         id: plan
-        run: |
-          tofu plan \
-            -var="bucket_name=${{ secrets.BUCKET_NAME }}" \
-            -var="aws_region=${{ env.AWS_REGION }}" \
-            -no-color
+        run: tofu plan -no-color
 
       - name: Display Plan Summary
         if: always()

@@ -7,6 +7,7 @@ variable "aws_region" {
 variable "bucket_name" {
   description = "Name of the S3 bucket to create"
   type        = string
+  default     = "my-tofu-created-bucket-12345"
 }
 
 variable "environment" {
