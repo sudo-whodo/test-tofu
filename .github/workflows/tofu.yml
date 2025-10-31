@@ -57,7 +57,8 @@ jobs:
             -backend-config="bucket=${{ env.STATE_BUCKET }}" \
             -backend-config="key=terraform.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}" \
-            -backend-config="encrypt=true"
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
 
       - name: OpenTofu Validate
         id: validate
