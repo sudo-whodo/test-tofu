@@ -65,10 +65,15 @@ jobs:
 
       - name: OpenTofu Plan
         id: plan
-        run: tofu plan -no-color
+        timeout-minutes: 5
+        run: |
+          tofu plan -input=false -no-color || {
+            echo "❌ Plan failed with exit code $?"
+            exit 1
+          }
 
       - name: Display Plan Summary
-        if: always()
+        if: success()
         run: |
           echo "✅ OpenTofu plan completed successfully!"
           echo "Review the plan output above to see what resources will be created."
