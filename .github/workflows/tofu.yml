@@ -17,7 +17,7 @@ permissions:
 env:
   AWS_REGION: us-west-2
   STATE_BUCKET: github-oidc-sudo-whodo-test-tofu-state
-  TOFU_VERSION: 1.8.5
+  TOFU_VERSION: 1.10.6
 
 jobs:
   tofu:
