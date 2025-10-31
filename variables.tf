@@ -15,8 +15,3 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
-
-variable "state_bucket_name" {
-  description = "Name of the S3 bucket for storing Tofu state"
-  type        = string
-}
