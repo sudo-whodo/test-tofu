@@ -17,12 +17,13 @@ permissions:
 env:
   AWS_REGION: us-west-2
   STATE_BUCKET: github-oidc-sudo-whodo-test-tofu-state
-  TOFU_VERSION: 1.10.6
 
 jobs:
-  tofu:
+  plan:
     name: OpenTofu Plan
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
+    environment:
+      name: plan
 
     steps:
       - name: Checkout code
@@ -33,7 +34,6 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-session-name: GitHubActions-OpenTofu
 
       - name: Verify AWS credentials
         run: |
@@ -42,8 +42,6 @@ jobs:
 
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v1
-        with:
-          tofu_version: ${{ env.TOFU_VERSION }}
 
       - name: OpenTofu Format Check
         id: fmt
@@ -55,7 +53,7 @@ jobs:
         run: |
           tofu init \
             -backend-config="bucket=${{ env.STATE_BUCKET }}" \
-            -backend-config="key=terraform.tfstate" \
+            -backend-config="key=${{ github.repository }}/terraform.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}" \
             -backend-config="encrypt=true" \
             -backend-config="use_lockfile=true"
@@ -68,7 +66,7 @@ jobs:
         id: plan
         timeout-minutes: 5
         run: |
-          tofu plan -input=false -no-color || {
+          tofu plan -input=false -no-color -out=tfplan || {
             echo "❌ Plan failed with exit code $?"
             exit 1
           }
@@ -78,3 +76,71 @@ jobs:
         run: |
           echo "✅ OpenTofu plan completed successfully!"
           echo "Review the plan output above to see what resources will be created."
+
+      - name: Upload Plan Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: tfplan
+          retention-days: 5
+
+      - name: Cleanup Plan File
+        if: always()
+        run: rm -f tfplan
+
+  apply:
+    name: OpenTofu Apply
+    runs-on: [self-hosted, linux]
+    needs: plan
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.plan.result == 'success'
+    environment:
+      name: plan-approved
+      url: https://github.com/${{ github.repository }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+
+      - name: OpenTofu Init
+        id: init
+        run: |
+          tofu init \
+            -backend-config="bucket=${{ env.STATE_BUCKET }}" \
+            -backend-config="key=${{ github.repository }}/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+
+      - name: OpenTofu Apply
+        id: apply
+        timeout-minutes: 10
+        run: |
+          tofu apply -auto-approve -input=false -no-color tfplan || {
+            echo "❌ Apply failed with exit code $?"
+            exit 1
+          }
+
+      - name: Display Apply Summary
+        if: success()
+        run: |
+          echo "✅ OpenTofu apply completed successfully!"
+          echo "Infrastructure has been deployed."
+
+      - name: Cleanup Plan File
+        if: always()
+        run: rm -f tfplan
