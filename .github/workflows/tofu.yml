@@ -21,7 +21,7 @@ env:
 jobs:
   plan:
     name: OpenTofu Plan
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, Linux]
     environment:
       name: plan
 
@@ -91,7 +91,7 @@ jobs:
 
   apply:
     name: OpenTofu Apply
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, Linux]
     needs: plan
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.plan.result == 'success'
     environment:
