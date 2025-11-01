@@ -76,7 +76,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: tfplan
+          name: tfplan-${{ github.run_number }}-${{ github.run_attempt }}
           path: tfplan
           retention-days: 5
 
@@ -109,7 +109,7 @@ jobs:
       - name: Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
-          name: tfplan
+          name: tfplan-${{ github.run_number }}-${{ github.run_attempt }}
 
       - name: OpenTofu Init
         id: init
